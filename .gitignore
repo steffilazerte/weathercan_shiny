@@ -2,3 +2,12 @@
 .Rhistory
 .RData
 .Ruserdata
+*.gdb
+*.rds
+*.dbf
+*.prj
+*.sbn
+*.sbx
+*.shp
+*.shx
+rsconnect
