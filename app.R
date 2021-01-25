@@ -7,6 +7,7 @@ library(leaflet)
 library(sf)
 library(glue)
 library(DT)
+library(ggiraph)
 
 #https://github.com/rstudio/leaflet/issues/615
 css_fix <- paste0("div.info.legend.leaflet-control br {clear: both;}\n",
@@ -22,8 +23,14 @@ ui <- dashboardPage(
                       column(width = 5, box(leafletOutput("map", height = 650, width = "100%"),
                                             width = NULL)),
                       column(width = 7,
-                             box(plotOutput("year", height = 300), width = NULL),
-                             box(DTOutput("station"), height = 300, width = NULL)))))
+                             box(radioButtons("smoother", "Add loess smoothing function?",
+                                              choices = c("Yes" = TRUE, "No" = FALSE),
+                                              selected = FALSE,
+                                              inline = TRUE, width = "100%"),
+                                 width = NULL, height = 70),
+                             box(girafeOutput("year", width = "100%", height = "100%"),
+                                 width = NULL, height = 280),
+                             box(DTOutput("station"), height = 280, width = NULL)))))
 
 server <- function(input, output) {
   # Initial Data ------------------------------------------------------------
@@ -121,7 +128,7 @@ server <- function(input, output) {
 
 
   # Plots -------------------------------------------------------------------
-  output$year <- renderPlot({
+  output$year <- renderGirafe({
     validate(need(!is.null(clicks$id),
                   "Click on a Region or Station to display yearly data"),
              errorClass = "notice")
@@ -131,24 +138,35 @@ server <- function(input, output) {
 
     if("region_nam" %in% names(mb_data())) {
       g <- ggplot(data = mb_data(),
-                  aes(x = date, y = mean_temp,colour = station_name, fill = station_name))
+                  aes(x = date, y = mean_temp, colour = station_name, group = station_name))
+      if(input$smoother == TRUE) {
+        g <- g + stat_smooth(method = "loess", formula = "y ~ x", se = FALSE, na.rm = TRUE)
+      }
     } else {
-      g <- ggplot(data = mb_data(), aes(x = date, y = mean_temp))
+      g <- ggplot(data = mb_data(), aes(x = date, y = mean_temp, group = station_name))
+
+      if(input$smoother == TRUE) {
+        g <- g + stat_smooth(method = "loess", formula = "y ~ x",
+                             se = TRUE, na.rm = TRUE, colour = "black")
+      }
     }
     g <- g +
-      theme_bw(base_size = 15) +
-      geom_line(size = 1, na.rm = TRUE) +
-      geom_ribbon(aes(ymin = min_temp, ymax = max_temp), colour = NA, alpha = 0.3) +
-      scale_colour_viridis_d(name = "Station Name", end = 0.8, aesthetics = c("colour", "fill")) +
+      theme_bw(base_size = 13) +
+      geom_point_interactive(aes(tooltip = station_name, data_id = station_name),
+                             size = 2, na.rm = TRUE) +
+      scale_colour_viridis_d(name = "Station Name", end = 0.8) +
       labs(y = "Daily Temperature (C°)", x = "Date",
-           title = clicks$id, subtitle = "Mean (Min - Max)",
+           title = glue("{clicks$id} - Hover to highlight a station"),
            caption = "Only showing stations with data")
 
     if(!is.null(clicks$row)) {
-      g <- g + geom_point(data = mb_data()[clicks$row, ],
+      g <- g + geom_point(data = mb_data()[clicks$row, ], na.rm = TRUE,
                           colour = "black", size = 5, show.legend = FALSE)
     }
-    g
+    girafe(ggobj = g, width_svg = 12, height_svg = 4, options = list(
+      opts_hover_inv(css = "opacity:0.1;"),
+      opts_hover(css = "stroke-width:2;")
+    ))
   })
 
 
@@ -161,7 +179,7 @@ server <- function(input, output) {
                             date,
                             mean_temp,
                             min_temp, max_temp),
-                     options = list(pageLength = 6, dom = "tp"),
+                     options = list(pageLength = 4, dom = "tp"),
                      caption = htmltools::tags$caption(style = 'caption-side: top; color:black; font-size:125%; font-weight: bold','Click on rows to highlight dates in above figure') )
     }
 
