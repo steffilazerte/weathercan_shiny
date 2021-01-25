@@ -1,3 +1,3 @@
 library(rsconnect)
-deployApp()
+deployApp(forceUpdate = TRUE)
 
