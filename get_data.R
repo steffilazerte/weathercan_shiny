@@ -6,24 +6,24 @@ library(janitor)
 library(rnaturalearth)
 
 # Get protected areas
-f <- "CPCAD-BDCAPC_Dec2019.gdb.zip"
-ff <- str_remove(f, ".zip")
-if(!dir.exists(ff)){
-  download.file(file.path("https://cws-scf.ca", f), destfile = f)
-  unzip(f)
-  unlink(f)
-}
+# f <- "CPCAD-BDCAPC_Dec2019.gdb.zip"
+# ff <- str_remove(f, ".zip")
+# if(!dir.exists(ff)){
+#   download.file(file.path("https://cws-scf.ca", f), destfile = f)
+#   unzip(f)
+#   unlink(f)
+# }
 
 # Filter Protected areas to MB
-st_layers(ff)
-pa <- st_read(ff, layer = "CPCAD_Dec2019") %>%
-  clean_names() %>%
-  filter(str_detect(loc_e, "Arctic|Manitoba"))
-
-mb_pa <- ne_states(country = "Canada", returnclass = "sf") %>%
-  filter(name_en == "Manitoba") %>%
-  st_transform(crs = st_crs(pa)) %>%
-  st_join(pa, ., left = FALSE)
+# st_layers(ff)
+# pa <- st_read(ff, layer = "CPCAD_Dec2019") %>%
+#   clean_names() %>%
+#   filter(str_detect(loc_e, "Arctic|Manitoba"))
+#
+# mb_pa <- ne_states(country = "Canada", returnclass = "sf") %>%
+#   filter(name_en == "Manitoba") %>%
+#   st_transform(crs = st_crs(pa)) %>%
+#   st_join(pa, ., left = FALSE)
 
 # Get climate data
 if(!file.exists("mb_2020.rds")){

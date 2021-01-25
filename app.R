@@ -1,7 +1,6 @@
 library(shiny)
 library(shinydashboard)
 library(ggplot2)
-library(tidyr)
 library(dplyr)
 library(leaflet)
 library(sf)
